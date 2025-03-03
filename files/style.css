@@ -1,113 +1,159 @@
+/* CSS Variables */
+:root {
+    /* Colors */
+    --primary-color: #0d6efd;
+    --primary-dark: #0a58ca;
+    --bg-light: #f8f9fa;
+    --bg-medium: #e9ecef;
+    --text-dark: #000;
+    --text-light: #fff;
+    
+    /* Spacing */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 15px;
+    --spacing-lg: 20px;
+    
+    /* Transitions */
+    --transition-speed: 0.2s;
+    
+    /* Dimensions */
+    --goal-number-size: 30px;
+    --min-response-height: 200px;
+    --min-content-height: 400px;
+}
+
+/* Reset and Base Styles */
+body {
+    background-color: var(--bg-light);
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Card Styles */
 .goal-card {
-    margin-bottom: 20px;
-    transition: transform 0.2s;
+    margin-bottom: var(--spacing-lg);
+    transition: transform var(--transition-speed) ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .goal-card:hover {
     transform: translateY(-5px);
-}
-
-.prompt-button {
-    margin: 5px;
-    cursor: pointer;
-}
-
-.prompt-button:hover {
-    opacity: 0.9;
-}
-
-#aiResponse {
-    min-height: 200px;
-    background-color: white;
-}
-
-.loading {
-    opacity: 0.7;
-}
-
-/* General styles */
-body {
-    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Goals Navigation */
 .goals-nav {
     position: sticky;
-    top: 20px;
+    top: var(--spacing-lg);
 }
 
 .goals-nav .list-group-item {
     border-left: 4px solid transparent;
-    transition: all 0.2s ease;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.goals-nav .list-group-item:hover,
+.goals-nav .list-group-item.active {
+    border-left-color: var(--primary-color);
 }
 
 .goals-nav .list-group-item:hover {
-    border-left-color: #0d6efd;
-    background-color: #f8f9fa;
+    background-color: var(--bg-light);
 }
 
 .goals-nav .list-group-item.active {
-    border-left-color: #0d6efd;
-    background-color: #e9ecef;
-    color: #000;
+    background-color: var(--bg-medium);
+    color: var(--text-dark);
 }
 
+/* Goal Number Badge */
 .goal-number {
-    width: 30px;
-    height: 30px;
+    width: var(--goal-number-size);
+    height: var(--goal-number-size);
     border-radius: 50%;
-    background-color: #0d6efd;
-    color: white;
+    background-color: var(--primary-color);
+    color: var(--text-light);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .active .goal-number {
-    background-color: #0a58ca;
+    background-color: var(--primary-dark);
 }
 
-/* Goal Content */
+/* Content Areas */
 .tab-content {
-    min-height: 400px;
+    min-height: var(--min-content-height);
 }
 
 .prompts-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
 }
 
+/* Buttons and Interactive Elements */
 .prompt-button {
     text-align: left;
     white-space: normal;
     height: auto;
-    padding: 10px 15px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: all var(--transition-speed) ease;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* AI Response */
+.prompt-button:hover {
+    opacity: 0.9;
+    transform: translateX(var(--spacing-xs));
+}
+
+/* AI Response Area */
+#aiResponse {
+    min-height: var(--min-response-height);
+    background-color: var(--text-light);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: var(--spacing-md);
+}
+
 .ai-response-content {
     white-space: pre-wrap;
+    line-height: 1.6;
 }
 
-/* Loading Spinner */
+/* Loading States */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
 .translation-loading {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    z-index: 9999;
+    color: var(--text-light);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: 4px;
+    z-index: 1000;
 }
 
-/* Responsive adjustments */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
     .goals-nav {
-        position: relative;
-        margin-bottom: 20px;
+        position: static;
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .prompt-button {
+        font-size: 0.9rem;
     }
 }
