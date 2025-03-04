@@ -22,3 +22,6 @@ build/
 
 # Cache
 .cache/
+
+# Sensitive configuration
+files/config.secrets.js

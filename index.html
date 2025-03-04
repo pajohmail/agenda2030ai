@@ -8,10 +8,6 @@
     
     <title>Agenda 2030 AI Explorer</title>
     
-    <!-- Preload critical assets -->
-    <link rel="preload" href="files/style.css" as="style">
-    <link rel="preload" href="files/app.js" as="script" type="module">
-    
     <!-- Stylesheets -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link href="files/style.css" rel="stylesheet">
@@ -25,60 +21,7 @@
             </a>
             <div class="ms-auto">
                 <label for="languageSelect" class="visually-hidden">Select Language</label>
-                <select id="languageSelect" class="form-select" aria-label="Select language">
-                    <option value="en">English</option>
-                    <option value="sv">Svenska</option>
-                    <option value="es">Español</option>
-                    <option value="fr">Français</option>
-                    <option value="de">Deutsch</option>
-                    <option value="it">Italiano</option>
-                    <option value="pt">Português</option>
-                    <option value="nl">Nederlands</option>
-                    <option value="pl">Polski</option>
-                    <option value="ru">Русский</option>
-                    <option value="ja">日本語</option>
-                    <option value="ko">한국어</option>
-                    <option value="zh">中文</option>
-                    <option value="ar">العربية</option>
-                    <option value="hi">हिन्दी</option>
-                    <option value="tr">Türkçe</option>
-                    <option value="vi">Tiếng Việt</option>
-                    <option value="th">ไทย</option>
-                    <option value="id">Bahasa Indonesia</option>
-                    <option value="fi">Suomi</option>
-                    <option value="da">Dansk</option>
-                    <option value="no">Norsk</option>
-                    <option value="cs">Čeština</option>
-                    <option value="hu">Magyar</option>
-                    <option value="el">Ελληνικά</option>
-                    <option value="uk">Українська</option>
-                    <option value="ro">Română</option>
-                    <option value="bg">Български</option>
-                    <option value="hr">Hrvatski</option>
-                    <option value="sr">Српски</option>
-                    <option value="sk">Slovenčina</option>
-                    <option value="sl">Slovenščina</option>
-                    <option value="et">Eesti</option>
-                    <option value="lv">Latviešu</option>
-                    <option value="lt">Lietuvių</option>
-                    <option value="he">עברית</option>
-                    <option value="fa">فارسی</option>
-                    <option value="bn">বাংলা</option>
-                    <option value="ta">தமிழ்</option>
-                    <option value="te">తెలుగు</option>
-                    <option value="ml">മലയാളം</option>
-                    <option value="ur">اردو</option>
-                    <option value="si">සිංහල</option>
-                    <option value="my">မြန်မာ</option>
-                    <option value="km">ខ្មែរ</option>
-                    <option value="ka">ქართული</option>
-                    <option value="am">አማርኛ</option>
-                    <option value="sw">Kiswahili</option>
-                    <option value="af">Afrikaans</option>
-                    <option value="zu">isiZulu</option>
-                    <option value="ms">Bahasa Melayu</option>
-                    <option value="fil">Filipino</option>
-                </select>
+                <select id="languageSelect" class="form-select" aria-label="Select language"></select>
             </div>
         </div>
     </nav>
@@ -101,7 +44,7 @@
 
                 <section class="mt-4 p-4 bg-light rounded" aria-live="polite">
                     <h3 id="responseTitle" class="mb-3" data-translate>AI Response</h3>
-                    <div id="aiResponse" class="p-3 border rounded" aria-label="AI generated response">
+                    <div id="aiResponse" class="p-3 border rounded bg-white" aria-label="AI generated response">
                         <p class="text-muted">Select a prompt from any goal above to see the AI response here.</p>
                     </div>
                 </section>
@@ -113,7 +56,10 @@
     <div id="errorContainer" class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;"></div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script type="module" src="files/config.js"></script>
+    <script type="module" src="files/translations.js"></script>
+    <script type="module" src="files/goals.js"></script>
     <script type="module" src="files/app.js"></script>
 </body>
 </html>

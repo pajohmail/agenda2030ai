@@ -1,22 +1,29 @@
 /**
  * translations.js
- * Handles translation functionality with caching and rate limiting
+ * Handles internationalization and translation functionality
  */
+
+import CONFIG from './config.js';
 
 class TranslationService {
     constructor() {
+        this.translations = new Map();
         this.currentLanguage = CONFIG.TRANSLATION.DEFAULT_LANGUAGE;
-        this.cache = new Map();
-        this.requestQueue = [];
-        this.isProcessingQueue = false;
-        this.retryDelay = CONFIG.TRANSLATION.RETRY_DELAY;
-        this.maxRetries = CONFIG.TRANSLATION.MAX_RETRIES;
+        this.translationQueue = [];
+        this.isProcessing = false;
+        this.retryDelay = 2000;     // Increased to 2 seconds
+        this.maxRetries = 3;
+        this.requestDelay = 1000;   // Delay between individual requests
+        this.batchSize = 2;         // Reduced batch size to avoid rate limits
         
         // Load cached translations from localStorage if available
         this.loadCacheFromStorage();
         
         // Periodically save cache to localStorage
-        setInterval(() => this.saveCacheToStorage(), 5 * 60 * 1000); // Every 5 minutes
+        setInterval(() => this.saveCacheToStorage(), 5 * 60 * 1000);
+
+        // Initialize language selector
+        this.initializeLanguageSelector();
     }
 
     /**
@@ -32,7 +39,7 @@ class TranslationService {
                 // Only load cache if it's not expired
                 if (Date.now() - timestamp < CONFIG.TRANSLATION.CACHE_DURATION) {
                     Object.entries(translations).forEach(([key, value]) => {
-                        this.cache.set(key, value);
+                        this.translations.set(key, value);
                     });
                     console.log('Loaded translations from cache');
                 }
@@ -49,7 +56,7 @@ class TranslationService {
     saveCacheToStorage() {
         try {
             const cacheData = {
-                translations: Object.fromEntries(this.cache),
+                translations: Object.fromEntries(this.translations),
                 timestamp: Date.now()
             };
             localStorage.setItem('translationCache', JSON.stringify(cacheData));
@@ -59,153 +66,180 @@ class TranslationService {
     }
 
     /**
-     * Utility function to pause execution
+     * Delay between API requests to avoid rate limiting
      * @private
      */
-    sleep(ms) {
+    async delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
-     * Queues a translation request
-     * @param {string} text - Text to translate
-     * @param {string} targetLang - Target language code
-     * @returns {Promise<string>} Translated text
-     */
-    async queueTranslation(text, targetLang) {
-        return new Promise((resolve, reject) => {
-            this.requestQueue.push({ 
-                text, 
-                targetLang, 
-                resolve, 
-                reject,
-                timestamp: Date.now()
-            });
-            
-            if (!this.isProcessingQueue) {
-                this.processQueue();
-            }
-        });
-    }
-
-    /**
-     * Processes the translation request queue
+     * Initializes the language selector with available languages
      * @private
      */
-    async processQueue() {
-        if (this.isProcessingQueue || this.requestQueue.length === 0) {
-            return;
-        }
-
-        this.isProcessingQueue = true;
-
-        while (this.requestQueue.length > 0) {
-            const request = this.requestQueue[0];
-            
-            // Remove stale requests (older than 5 minutes)
-            if (Date.now() - request.timestamp > 5 * 60 * 1000) {
-                this.requestQueue.shift();
-                request.reject(new Error('Translation request timeout'));
-                continue;
-            }
-            
-            try {
-                const result = await this.translateWithRetry(request.text, request.targetLang);
-                request.resolve(result);
-            } catch (error) {
-                request.reject(error);
-            }
-
-            this.requestQueue.shift();
-            await this.sleep(1000); // Rate limiting
-        }
-
-        this.isProcessingQueue = false;
-    }
-
-    /**
-     * Performs translation with retry logic
-     * @private
-     */
-    async translateWithRetry(text, targetLang, retryCount = 0) {
+    async initializeLanguageSelector() {
         try {
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`;
-            const response = await fetch(url);
-
-            if (response.status === 429 && retryCount < this.maxRetries) {
-                console.log(`Rate limited, retrying in ${this.retryDelay}ms...`);
-                await this.sleep(this.retryDelay);
-                this.retryDelay *= 2; // Exponential backoff
-                return this.translateWithRetry(text, targetLang, retryCount + 1);
-            }
-
-            if (!response.ok) {
-                throw new Error(`Translation API error: ${response.status}`);
-            }
-
+            const response = await fetch('files/languages.json');
             const data = await response.json();
-            this.retryDelay = CONFIG.TRANSLATION.RETRY_DELAY; // Reset delay after success
+            const languageSelect = document.getElementById('languageSelect');
             
-            if (!data.responseData?.translatedText) {
-                throw new Error('No translation returned from API');
-            }
+            if (languageSelect && data.languages) {
+                // Clear existing options
+                languageSelect.innerHTML = '';
+                
+                // Add language options
+                data.languages.forEach(lang => {
+                    const option = document.createElement('option');
+                    option.value = lang.code;
+                    option.textContent = lang.name;
+                    if (lang.code === this.currentLanguage) {
+                        option.selected = true;
+                    }
+                    languageSelect.appendChild(option);
+                });
 
-            return data.responseData.translatedText;
-        } catch (error) {
-            if (retryCount < this.maxRetries) {
-                console.log(`Error occurred, retrying in ${this.retryDelay}ms...`);
-                await this.sleep(this.retryDelay);
-                this.retryDelay *= 2;
-                return this.translateWithRetry(text, targetLang, retryCount + 1);
+                // Add event listener for language changes
+                languageSelect.addEventListener('change', (event) => {
+                    this.currentLanguage = event.target.value;
+                    this.updatePageTranslations(this.currentLanguage);
+                });
             }
-            throw error;
+        } catch (error) {
+            console.error('Failed to initialize language selector:', error);
         }
     }
 
     /**
-     * Main translation method
+     * Translates text to the target language with rate limit handling
      * @param {string} text - Text to translate
      * @param {string} targetLang - Target language code
      * @returns {Promise<string>} Translated text
      */
     async translate(text, targetLang) {
-        if (targetLang === CONFIG.TRANSLATION.DEFAULT_LANGUAGE) return text;
-        if (!text || text.trim() === '') return text;
-
-        const cacheKey = `${text}:${targetLang}`;
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
+        if (!text || !targetLang || targetLang === CONFIG.TRANSLATION.DEFAULT_LANGUAGE) {
+            return text;
         }
 
-        try {
-            console.log(`Translating to ${targetLang}:`, text);
-            const translatedText = await this.queueTranslation(text, targetLang);
-            this.cache.set(cacheKey, translatedText);
-            return translatedText;
-        } catch (error) {
-            console.error('Translation error:', error);
-            return text; // Fallback to original text
+        const cacheKey = `${text}_${targetLang}`;
+        if (this.translations.has(cacheKey)) {
+            return this.translations.get(cacheKey);
         }
+
+        let retries = 0;
+        while (retries < this.maxRetries) {
+            try {
+                if (retries > 0) {
+                    const delay = this.retryDelay * Math.pow(2, retries - 1);
+                    console.log(`Waiting ${delay}ms before retry ${retries + 1}`);
+                    await this.delay(delay);
+                }
+
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${targetLang}`);
+                
+                if (response.status === 429) {
+                    const quotaMessage = 'Daily translation quota reached. Please try again tomorrow.';
+                    console.warn(quotaMessage);
+                    this.showQuotaError(quotaMessage);
+                    return text;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`Translation API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Check for quota limit in the API response
+                if (data.responseStatus === 403 || (data.responseData && data.responseData.translatedText.includes("QUOTA"))) {
+                    const quotaMessage = 'Daily translation quota reached. Please try again tomorrow.';
+                    console.warn(quotaMessage);
+                    this.showQuotaError(quotaMessage);
+                    return text;
+                }
+
+                if (data.responseStatus === 200 && data.responseData?.translatedText) {
+                    const translatedText = data.responseData.translatedText;
+                    this.translations.set(cacheKey, translatedText);
+                    return translatedText;
+                } else {
+                    throw new Error('Translation API returned invalid response');
+                }
+            } catch (error) {
+                console.error('Translation attempt failed:', error);
+                if (retries === this.maxRetries - 1) {
+                    return text;
+                }
+                retries++;
+            }
+        }
+        return text;
     }
 
     /**
-     * Updates all translatable elements on the page
-     * @param {string} targetLang - Target language code
-     * @returns {Promise<void>}
+     * Shows a user-friendly error message when quota is reached
+     * @private
      */
-    async updatePageTranslations(targetLang) {
-        const elements = document.querySelectorAll('[data-translate]');
-        const translations = await Promise.all(
-            Array.from(elements).map(async (element) => {
-                const originalText = element.getAttribute('data-original-text') || element.textContent;
-                element.setAttribute('data-original-text', originalText);
-                return this.translate(originalText, targetLang);
-            })
-        );
+    showQuotaError(message) {
+        // Check if error message already exists
+        let errorDiv = document.getElementById('translation-error');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.id = 'translation-error';
+            errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,0.2);';
+            document.body.appendChild(errorDiv);
+        }
+        errorDiv.textContent = message;
         
-        elements.forEach((element, index) => {
-            element.textContent = translations[index];
-        });
+        // Remove the message after 5 seconds
+        setTimeout(() => {
+            if (errorDiv && errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    }
+
+    /**
+     * Updates translations for all elements with data-translate or data-goal-text attribute
+     * @param {string} language - Target language code
+     */
+    async updatePageTranslations(language) {
+        if (!language) {
+            console.warn('No language specified for translation update');
+            return;
+        }
+
+        console.log('Updating page translations to:', language);
+        const elements = document.querySelectorAll('[data-translate], [data-goal-text]');
+        
+        // Process elements in small batches with delays
+        for (let i = 0; i < elements.length; i += this.batchSize) {
+            const batch = Array.from(elements).slice(i, i + this.batchSize);
+            
+            // Process each batch
+            await Promise.all(batch.map(async element => {
+                try {
+                    const originalText = element.getAttribute('data-original-text') || element.textContent.trim();
+                    if (!element.getAttribute('data-original-text')) {
+                        element.setAttribute('data-original-text', originalText);
+                    }
+                    
+                    if (language === CONFIG.TRANSLATION.DEFAULT_LANGUAGE) {
+                        element.textContent = originalText;
+                    } else {
+                        const translatedText = await this.translate(originalText, language);
+                        element.textContent = translatedText || originalText;
+                    }
+                } catch (error) {
+                    console.error('Error translating element:', error);
+                    element.textContent = element.getAttribute('data-original-text') || element.textContent;
+                }
+            }));
+            
+            // Add delay between batches
+            if (i + this.batchSize < elements.length) {
+                await this.delay(this.requestDelay);
+            }
+        }
     }
 }
 
