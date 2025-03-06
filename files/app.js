@@ -39,7 +39,13 @@ class AIService {
             console.log('Sending prompt to LLM:', {
                 timestamp: new Date().toISOString(),
                 prompt: prompt,
-                language: language
+                language: language,
+                generationConfig: {
+                    maxOutputTokens: 500,
+                    temperature: 0.3,
+                    topK: 10,
+                    topP: 0.95
+                }
             });
 
             const response = await fetch(CONFIG.getApiUrl('GENERATE') + '?key=' + CONFIG.API.GEMINI.API_KEY, {
@@ -59,10 +65,10 @@ class AIService {
                         threshold: "BLOCK_NONE"
                     }],
                     generationConfig: {
-                        maxOutputTokens: 800, // Set maximum length of response
-                        temperature: 0.7,     // Controls randomness (0.0 to 1.0)
-                        topK: 40,            // Number of highest probability tokens to consider
-                        topP: 0.95           // Total probability mass of tokens to consider
+                        maxOutputTokens: 500, // Set maximum length of response
+                        temperature: 0.3,     // Controls randomness (0.0 to 1.0)
+                        topK: 10,            // Number of highest probability tokens to consider
+                        topP: 0.7         // Total probability mass of tokens to consider
                     }
                 })
             });

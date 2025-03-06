@@ -3,14 +3,24 @@
  * Application configuration and environment settings
  */
 
+// API Configuration - Update these values as needed
+const API_KEY = 'AIzaSyAnjhYr2odt5J9hq_-3ZS353spZgpyFvUI';
+const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+
 const CONFIG = {
     API: {
         GEMINI: {
-            API_KEY: 'AIzaSyAnjhYr2odt5J9hq_-3ZS353spZgpyFvUI',
-            BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
+            API_KEY: API_KEY,
+            BASE_URL: BASE_URL,
             MODEL: 'gemini-2.0-flash',
             ENDPOINTS: {
                 GENERATE: '/generateContent'
+            },
+            GENERATION_CONFIG: {
+                maxOutputTokens: 500,    // Set maximum length of response
+                temperature: 0.3,        // Controls randomness (0.0 to 1.0)
+                topK: 10,               // Number of highest probability tokens to consider
+                topP: 0.7               // Total probability mass of tokens to consider
             }
         }
     },
